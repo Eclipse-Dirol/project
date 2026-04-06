@@ -1,12 +1,16 @@
 from omegaconf import OmegaConf
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 config = {
     'path': {
-        'train': '../House prices/data/train.csv',
-        'test': '../House prices/data/test.csv',
-        'submission': '../House prices/data/submission.csv'
+        'Hp': {
+        'train': f'{BASE_DIR}/data/train.csv',
+        'test': f'{BASE_DIR}/data/test.csv',
+        'submission': f'{BASE_DIR}/data/submission.csv'
+        }
     }
-    
 }
 
 config = OmegaConf.create(config)
