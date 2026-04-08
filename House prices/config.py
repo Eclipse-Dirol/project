@@ -11,7 +11,7 @@ config = {
     },
     'model': {
         'linermodel': ('linerreg', 'LassoCV', 'RidgeCV', "SVR"),
-        'treemodel': ()
+        'treemodel': ('dectree', 'random_forest', 'catboost')
         },
     'args': {
         'randomstate': 42,
