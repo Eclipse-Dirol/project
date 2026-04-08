@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from config import config
-from models.linear_models import linerreg, SVR, lassocv, ridgecv
+from models.linear_models import linerreg, SVR, lassocv, ridgecv, elasticnetcv
 from work_with_models import work
 
 prep = work()
@@ -9,6 +9,7 @@ model_1 = linerreg()
 model_2 = SVR()
 model_3 = lassocv()
 model_4 = ridgecv()
+model_5 = elasticnetcv()
 print('--import data--')
 df_train = pd.read_csv(config.path.train)
 print('--import complete, prep now--')
@@ -18,6 +19,7 @@ metrics_1 = model_1.train(X_train = X, y = y, folds = 5, repeat = 3)
 metrics_2 = model_2.train(X_train = X, y = y, folds = 5, repeat = 3)
 metrics_3 = model_3.train(X_train = X, y = y, folds = 5, repeat = 3)
 metrics_4 = model_4.train(X_train = X, y = y, folds = 5, repeat = 3)
+metrics_5 = model_5.train(X_train = X, y = y, folds = 5, repeat = 3)
 print('--linerreg:')
 print(f'MSE: {metrics_1['mse'][0]} | MSE std: {metrics_1['mse'][1]}')
 print(f'MAE: {metrics_1['mae'][0]} | MAE std: {metrics_1['mae'][1]}')
@@ -34,6 +36,10 @@ print('--ridgecv:')
 print(f'MSE: {metrics_4['mse'][0]} | MSE std: {metrics_4['mse'][1]}')
 print(f'MAE: {metrics_4['mae'][0]} | MAE std: {metrics_4['mae'][1]}')
 print(f'r2: {metrics_4['r2']}')
+print('--elasticnetcv')
+print(f'MSE: {metrics_5['mse'][0]} | MSE std: {metrics_5['mse'][1]}')
+print(f'MAE: {metrics_5['mae'][0]} | MAE std: {metrics_5['mae'][1]}')
+print(f'r2: {metrics_5['r2']}')
 
 # cols_with_nans = df_train.columns[df_train.isna().any()].tolist()
 
