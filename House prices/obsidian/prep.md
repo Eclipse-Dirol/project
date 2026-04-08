@@ -16,4 +16,5 @@ GarageArea, GarageCars, TotRmsAbvGrd, Fireplaces, FullBath, GrLivArea, 1stFlrSF,
 # Сделать unknown для всех nun в category features
 
 1. посчитать всякие groupby по category фичам
-2. 
+
+[[структура]]
