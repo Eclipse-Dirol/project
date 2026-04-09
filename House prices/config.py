@@ -9,9 +9,9 @@ config = {
         'test': f'{BASE_DIR}/data/test.csv',
         'submission': f'{BASE_DIR}/data/submission.csv'
     },
-    'model': {
-        'linermodel': ('linerreg', 'LassoCV', 'RidgeCV', "SVR"),
-        'treemodel': ('dectree', 'random_forest', 'catboost')
+    'models': {
+        'Linermodel': ('linerreg', 'lassocv', 'ridgecv', 'elasticnetcv', "SVR"),
+        'Treemodel': ('decisiontree', 'random_forest', 'catboost', 'xgboost')
         },
     'args': {
         'randomstate': 42,
@@ -21,7 +21,7 @@ config = {
         },
         'target': 'SalePrice'
         },
-    'metrics': ['mean_absolute_error', 'mean_squared_erroe', 'r2_score']    
+    'modelmode': ['train', 'test', 'submission']   
 }
 
 config = OmegaConf.create(config)

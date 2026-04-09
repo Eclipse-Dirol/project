@@ -119,7 +119,7 @@ class catboost(Base):
 
 class xgboost(Base):
     def __init__(self):
-        self.model = XGBRegressor(verbose=False)
+        self.model = XGBRegressor()
 
     def train(
         self,

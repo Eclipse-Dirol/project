@@ -18,6 +18,7 @@ class Base(ABC):
         pass
 
 class validation():
+    @staticmethod
     def none_folds(
     X,
     y,
@@ -42,18 +43,19 @@ class validation():
         r2 = r2_score(y_test, preds)
         return {'mae': mae, 'mse': mse, 'r2': r2}
 
+    @staticmethod
     def k_folds(
-        X,
-        y,
-        folds,
-        repeat,
+        X: pd.DataFrame = None,
+        y: pd.Series = None,
+        folds: int | None = None,
+        repeat: int | None = None,
         model: any = None,
         random_state: int | None = config.args.randomstate
         ) -> dict[tuple]:
         if not isinstance(X, pd.DataFrame):
             raise TypeError('X not a DataFrame')
-        if not isinstance(y, (pd.Series, pd.DataFrame)):
-            raise TypeError('y not s DataFrame or Series')
+        if not isinstance(y, pd.Series):
+            raise TypeError('y not a Series')
         assert folds>0 and repeat>0, 'only positive values for folds, repeat'
         if not is_regressor(model): raise ValueError('model not defined')
         

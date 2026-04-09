@@ -41,10 +41,11 @@ class work():
     def transform_and_scaler(
         self,
         df: pd.DataFrame = None,
-        train: bool = True
+        train: bool | None = None,
+        test: bool | None = None
     ) -> tuple[pd.DataFrame, pd.Series | None]:
         df_temp = df.copy()
-        if train:
+        if train or test:
             target = df_temp[config.args.target]
         df_temp = df_temp.drop(columns=['Id', config.args.target])
         num_cols = df_temp.select_dtypes(include=['int', 'float']).columns.tolist()
@@ -55,23 +56,24 @@ class work():
         ])
         col_trans.set_output(transform="pandas")
         pipe = Pipeline([
-            ('lite_fiilna', FunctionTransformer(self.lite_fiilna)),
+            ('lite_fiilna', FunctionTransformer(self.lite_fillna)),
             ('prep', col_trans)
         ])
         df_temp = pipe.fit_transform(X=df_temp)
-        if train:
+        if train or test:
             return (df_temp, target)
         return (df_temp, None)
 
     def prep(
         self,
         df: pd.DataFrame = None, 
-        train: bool = True,
+        train: bool | None = None,
+        test: bool | None = None,
         FE: bool = False
     ) -> tuple[pd.DataFrame, pd.Series]:
         df_temp = df.copy()
         if FE:
             df_temp, target = self.fe()
         else:
-            df_temp, target = self.transform_and_scaler(df = df_temp, train=train)
+            df_temp, target = self.transform_and_scaler(df = df_temp, train = train, test = test)
             return (df_temp, target)
