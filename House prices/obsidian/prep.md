@@ -13,6 +13,7 @@ GarageArea, GarageCars, TotRmsAbvGrd, Fireplaces, FullBath, GrLivArea, 1stFlrSF,
 - сделать flag: have_pool | **PoolArea** **PoolQC**
 - сделать flag: have_Fence | **Fence**
 - можно вынести high_price ~ 0.10 - 0.15 from high
+- декомпозицию временных фич
 # Сделать unknown для всех nun в category features
 
 1. посчитать всякие groupby по category фичам

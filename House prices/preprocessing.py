@@ -9,7 +9,7 @@ class work():
     def __init__(self):
         pass
     
-    def prep_for_nan(self, df: pd.DataFrame) -> pd.DataFrame:
+    def lite_fillna(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         func for nan processing
         nan -> 'unknown' for category features
@@ -22,11 +22,12 @@ class work():
         df_temp = df_temp.fillna('unknown')
         return df_temp
 
-    def prep_with_fe(self, df: pd.DataFrame) -> pd.DataFrame:
+    def fe(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         """
-        FE and prep for df
+        FE (feature engineering) for df
         """
         df_temp = df.copy
+        target = df_temp[config.args.target]
         df_temp['LotFrontage'] = df_temp['LotFrontage'].fillna(value=df_temp['LotFrontage'].median())
         df_temp['MasVnrArea'] = df_temp['MasVnrArea'].fillna(df_temp['MasVnrArea'].median())
         df_temp['Have_Garage'] = (df_temp['GarageArea'] > 0).astype(int)
@@ -35,31 +36,42 @@ class work():
         df_temp['Have_Pool'] = (df_temp['PoolArea'] > 0).astype(int)
         df_temp['High_Price'] = (df_temp['SalePrice'] > df_temp['SalePrice'].quantile(0.9)).astype(int)
         df_temp.drop(colomns=['GarageYrBlt'])
+        return (df_temp, target)
+
+    def transform_and_scaler(
+        self,
+        df: pd.DataFrame = None,
+        train: bool = True
+    ) -> tuple[pd.DataFrame, pd.Series | None]:
+        df_temp = df.copy()
+        if train:
+            target = df_temp[config.args.target]
+        df_temp = df_temp.drop(columns=['Id', config.args.target])
+        num_cols = df_temp.select_dtypes(include=['int', 'float']).columns.tolist()
+        cat_cols = df_temp.select_dtypes(include=['str', 'category', 'object']).columns.tolist()
+        col_trans = ColumnTransformer(transformers=[
+            ('num_cols', StandardScaler(), num_cols),
+            ('cat_cols', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1), cat_cols)
+        ])
+        col_trans.set_output(transform="pandas")
+        pipe = Pipeline([
+            ('lite_fiilna', FunctionTransformer(self.lite_fiilna)),
+            ('prep', col_trans)
+        ])
+        df_temp = pipe.fit_transform(X=df_temp)
+        if train:
+            return (df_temp, target)
+        return (df_temp, None)
 
     def prep(
         self,
         df: pd.DataFrame = None, 
         train: bool = True,
         FE: bool = False
-    ) -> tuple[pd.DataFrame, pd.Series] | pd.DataFrame:
+    ) -> tuple[pd.DataFrame, pd.Series]:
         df_temp = df.copy()
-        if train:
-            target = df_temp[config.args.target]
-            df_temp = df_temp.drop(columns=['Id', config.args.target])
-            num_cols = df_temp.select_dtypes(include=['int', 'float']).columns.tolist()
-            cat_cols = df_temp.select_dtypes(include=['str', 'category', 'object']).columns.tolist()
-            col_trans = ColumnTransformer(transformers=[
-                ('num_cols', StandardScaler(), num_cols),
-                ('cat_cols', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1), cat_cols)
-            ])
-            col_trans.set_output(transform="pandas")
-            pipe = Pipeline([
-                ('prep_for_nan', FunctionTransformer(self.prep_for_nan)),
-                ('prep', col_trans)
-            ])
-            df_temp = pipe.fit_transform(X=df_temp)
-            return (df_temp, target)
+        if FE:
+            df_temp, target = self.fe()
         else:
-            df_temp = self.prep_for_nan(df = df_temp)
-            df_temp = df_temp.drop(columns=['Id'])
-            return df_temp
+            df_temp, target = self.transform_and_scaler(df = df_temp, train=train)
+            return (df_temp, target)

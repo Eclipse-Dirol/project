@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from config import config
 from models.linear_models import linerreg, SVR, lassocv, ridgecv, elasticnetcv
-from models.tree_models import dectree, random_forest, catboost
-from work_with_models import work
+from models.tree_models import dectree, random_forest, catboost, xgboost
+from preprocessing import work
 
 prep = work()
 model_1 = linerreg()
@@ -14,6 +14,7 @@ model_5 = elasticnetcv()
 model_6 = dectree()
 model_7 = random_forest()
 model_8 = catboost()
+model_9 = xgboost()
 print('--import data--')
 df_train = pd.read_csv(config.path.train)
 print('--import complete, prep now--')
@@ -27,6 +28,7 @@ metrics_5 = model_5.train(X_train = X, y = y, folds = 5, repeat = 3)
 metrics_6 = model_6.train(X_train = X, y = y, folds = 5, repeat = 3)
 metrics_7 = model_7.train(X_train = X, y = y, folds = 5, repeat = 3)
 metrics_8 = model_8.train(X_train = X, y = y, folds = 5, repeat = 3)
+metrics_9 = model_9.train(X_train = X, y = y, folds = 5, repeat = 3)
 print('--linerreg:')
 print(f'MSE: {metrics_1['mse'][0]} | MSE std: {metrics_1['mse'][1]}')
 print(f'MAE: {metrics_1['mae'][0]} | MAE std: {metrics_1['mae'][1]}')
@@ -59,6 +61,10 @@ print('--catboost')
 print(f'MSE: {metrics_8['mse'][0]} | MSE std: {metrics_8['mse'][1]}')
 print(f'MAE: {metrics_8['mae'][0]} | MAE std: {metrics_8['mae'][1]}')
 print(f'r2: {metrics_8['r2']}')
+print('--xgboost:')
+print(f'MSE: {metrics_9['mse'][0]} | MSE std: {metrics_9['mse'][1]}')
+print(f'MAE: {metrics_9['mae'][0]} | MAE std: {metrics_9['mae'][1]}')
+print(f'r2: {metrics_9['r2']}')
 
 # cols_with_nans = df_train.columns[df_train.isna().any()].tolist()
 
