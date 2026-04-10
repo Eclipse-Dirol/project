@@ -5,7 +5,6 @@ import os
 
 class CLI():
     def __init__(self):
-        self.model_mode = list(config.modelmode)
         self.type_models = list(config.models.keys())
 
     def __call__(self):
@@ -24,7 +23,8 @@ class CLI():
                 print(f'{num}) {key} | {'ON' if value else 'OFF'}')
             models = pd.DataFrame({
             self.type_models[0]: pd.Series(config.models[self.type_models[0]]),
-            self.type_models[1]: pd.Series(config.models[self.type_models[1]])
+            self.type_models[1]: pd.Series(config.models[self.type_models[1]]),
+            self.type_models[2]: pd.Series(config.models[self.type_models[2]])
         }).fillna('')
             print('=====m - select model=====q - quit=====')
             print(models)

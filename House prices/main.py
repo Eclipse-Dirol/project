@@ -3,7 +3,8 @@ import numpy as np
 from config import config
 from preprocessing import work
 from models.linear_models import linerreg, SVR, lassocv, ridgecv, elasticnetcv
-from models.tree_models import decisiontree, random_forest, catboost, xgboost
+from models.tree_models import decisiontree, random_forest, catboost, xgboost, lightgbm
+from models.KNN_models import knn
 from CLI import CLI
 
 cli = CLI()

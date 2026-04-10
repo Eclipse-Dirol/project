@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor
 from models.base import Base, validation
 from catboost import CatBoostRegressor
 from xgboost import XGBRegressor
+from lightgbm import LGBMRegressor
 
 val = validation()
 
@@ -120,6 +121,42 @@ class catboost(Base):
 class xgboost(Base):
     def __init__(self):
         self.model = XGBRegressor()
+
+    def train(
+        self,
+        X_train: pd.DataFrame | None = None,
+        y: pd.Series | None = None,
+        folds: int | None = None,
+        repeat: int | None = None,
+        train_size: float = 0.2
+    ):
+        if folds is None:
+            metrics = val.none_folds(
+                X = X_train,
+                y = y,
+                model = self.model,
+                train_size=train_size
+            )
+            return metrics
+        else:
+            metrics = val.k_folds(
+                X = X_train,
+                y = y,
+                folds=folds,
+                repeat=repeat,
+                model=self.model,
+            )
+            return metrics
+
+    def predict(
+        self,
+        X: pd.DataFrame = None,
+    ):
+        return self.model.predict(X)
+
+class lightgbm(Base):
+    def __init__(self):
+        self.model = LGBMRegressor(verbose = -1)
 
     def train(
         self,

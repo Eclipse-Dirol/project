@@ -11,7 +11,8 @@ config = {
     },
     'models': {
         'Linermodel': ('linerreg', 'lassocv', 'ridgecv', 'elasticnetcv', "SVR"),
-        'Treemodel': ('decisiontree', 'random_forest', 'catboost', 'xgboost')
+        'Treemodel': ('decisiontree', 'random_forest', 'catboost', 'xgboost', 'lightgbm'),
+        'KNN': ('knn'),
         },
     'args': {
         'randomstate': 42,
@@ -19,9 +20,9 @@ config = {
             'folds': 5,
             'repeat': 3
         },
-        'target': 'SalePrice'
+    'target': 'SalePrice'
         },
-    'modelmode': ['train', 'test', 'submission']   
+    'modelmode': ['train', 'test', 'submission']
 }
 
 config = OmegaConf.create(config)
