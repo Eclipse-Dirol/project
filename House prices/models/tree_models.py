@@ -9,7 +9,7 @@ from xgboost import XGBRegressor
 
 val = validation()
 
-class dectree(Base):
+class decisiontree(Base):
     def __init__(self):
         self.model = DecisionTreeRegressor()
 
