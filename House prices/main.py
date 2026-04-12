@@ -44,7 +44,7 @@ def main():
             models_name = config.selectedmodels
 
             for name in models_name:
-                model = get_model(name = name)()
+                model = get_model(name = name)(**config.param[name])
                 print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
                 pipe = pipeline(model = model)
                 metrics, preds = pipe.full_test(
@@ -74,7 +74,7 @@ def main():
             models_name = config.selectedmodels
             for name in models_name:
                 print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
-                model = get_model(name = name)()
+                model = get_model(name = name)(**config.param[name])
                 pipe = pipeline(model = model)
                 pipe.fit(X = X_train, y = y)
                 preds = pipe.predict( X = X_test)
@@ -94,7 +94,7 @@ def main():
         final_estimator = get_model(name = config.ensemble.finalmodel)()
         list_func_model = []
         for name in config.selectedmodels:
-            list_func_model.append((name, get_model(name = name)()))
+            list_func_model.append((name, get_model(name = name)(**config.param[name])))
 
         if config.train:
 
@@ -124,7 +124,6 @@ def main():
                     use_submit = use_submit,
                     X_test = X_test
                 )
-                os.system('cls' if os.name == 'nt' else 'clear')
                 get_metrics(metrics= metrics)
                 if use_submit or save_model:
                     print('=+=+= save =+=+=')
