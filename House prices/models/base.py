@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from config import config
 import pandas as pd
 import numpy as np
@@ -6,27 +5,23 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.base import is_regressor
 from sklearn.model_selection import RepeatedKFold
-
-class Base(ABC):
-
-    @abstractmethod
-    def train(self, X, y, folds = None):
-        pass
-
-    @abstractmethod
-    def predict(self, X):
-        pass
+from sklearn.base import BaseEstimator, RegressorMixin
+import joblib
 
 class validation():
     @staticmethod
     def none_folds(
-    X,
-    y,
-    train_size,
+    X_train: pd.DataFrame = None,
+    y: pd.Series = None,
+    X_test: pd.DataFrame | None = None,
+    train_size: float | None = config.args.randomstate,
     model: any = None,
-    random_state: int | None = config.args.randomstate
-    ) -> dict:
-        if not isinstance(X, pd.DataFrame):
+    random_state: int | None = config.args.randomstate,
+    use_submit: bool | None = None,
+    
+    ) -> tuple[dict, np.ndarray | None]:
+
+        if not isinstance(X_train, pd.DataFrame):
             raise TypeError('X not a DataFrame')
         if not isinstance(y, (pd.Series, pd.DataFrame)):
             raise TypeError('y not s DataFrame or Series')
@@ -34,46 +29,135 @@ class validation():
         if not is_regressor(model): raise ValueError('model not defined')
         
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, train_size=train_size, random_state=random_state
+            X_train, y, train_size=train_size, random_state=random_state
             )
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
+        test_preds = None
+        if use_submit:
+            test_preds = model.predict(X_test)
         mae = mean_absolute_error(y_test, preds)
         mse = mean_squared_error(y_test, preds)
         r2 = r2_score(y_test, preds)
-        return {'mae': mae, 'mse': mse, 'r2': r2}
+        return ({'mae': mae, 'mse': mse, 'r2': r2}, test_preds)
 
     @staticmethod
     def k_folds(
-        X: pd.DataFrame = None,
+        X_train: pd.DataFrame = None,
         y: pd.Series = None,
-        folds: int | None = None,
-        repeat: int | None = None,
+        X_test: pd.DataFrame | None = None,
+        folds: int | None = config.args.kfold.folds,
+        repeat: int | None = config.args.kfold.repeat,
         model: any = None,
-        random_state: int | None = config.args.randomstate
-        ) -> dict[tuple]:
-        if not isinstance(X, pd.DataFrame):
+        random_state: int | None = config.args.randomstate,
+        use_submit: bool | None = None
+        ) -> tuple[dict, np.ndarray | None]:
+
+        if not isinstance(X_train, pd.DataFrame):
             raise TypeError('X not a DataFrame')
         if not isinstance(y, pd.Series):
             raise TypeError('y not a Series')
         assert folds>0 and repeat>0, 'only positive values for folds, repeat'
         if not is_regressor(model): raise ValueError('model not defined')
-        
+
         kf = RepeatedKFold(n_splits=folds, n_repeats=repeat, random_state=random_state)
         mae_list, mse_list, r2_list = [], [], []
-        for (tr_idx, val_idx) in kf.split(X):
-            X_tr, X_val = X.iloc[tr_idx], X.iloc[val_idx]
+        test_preds = None
+        for (tr_idx, val_idx) in kf.split(X_train):
+            X_tr, X_val = X_train.iloc[tr_idx], X_train.iloc[val_idx]
             y_tr, y_val = y.iloc[tr_idx], y.iloc[val_idx]
             
             model.fit(X_tr, y_tr)
             preds = model.predict(X_val)
             
+            if use_submit:
+                if X_test is None: raise ValueError('X_test is None, please fix it')
+                test_preds = model.predict(X_test)
+            
             mae_list.append(mean_absolute_error(y_val, preds))
             mse_list.append(mean_squared_error(y_val, preds))
             r2_list.append(r2_score(y_val, preds))
 
+        if use_submit:
+            test_preds /= (folds * repeat)
         mae, std_mae = np.mean(mae_list), np.std(mae_list)
         mse, std_mse = np.mean(mse_list), np.std(mse_list)
         r2 = np.mean(r2_list)
         
-        return {'mae': (mae, std_mae), 'mse': (mse, std_mse), 'r2': (r2)}
+        return ({'mae': (mae, std_mae), 'mse': (mse, std_mse), 'r2': (r2)}, test_preds)
+
+class ModelPipeline(BaseEstimator, RegressorMixin):
+    def __init__(
+        self,
+        model: any = None,
+    ):
+        self.model = model
+        self.val = validation()
+
+    def fit(
+        self,
+        X: pd.DataFrame  = None,
+        y: pd.Series = None,
+    ):
+        return self.model.fit(X, y)
+
+    def predict(
+        self,
+        X: pd.DataFrame = None,
+    ):
+        return self.model.predict(X)
+
+    def full_test(
+        self,
+        X_train: pd.DataFrame = None,
+        y: pd.Series = None,
+        folds: int | None = None,
+        repeat: int | None = None,
+        use_submit: bool | None = None,
+        X_test: pd.DataFrame | None = None,
+    ) -> tuple[dict, np.ndarray | None]:
+        if folds is None:
+            metrics, preds = self.val.none_folds(
+                X_train = X_train,
+                y = y,
+                model = self.model,
+                X_test = X_test,
+                use_submit = use_submit,
+            )
+            return (metrics, preds)
+        else:
+            metrics, preds = self.val.k_folds(
+                X_train = X_train,
+                y = y,
+                folds=folds,
+                repeat=repeat,
+                model=self.model,
+                X_test = X_test,
+                use_submit = use_submit
+            )
+            return (metrics, preds)
+
+    def save_model(
+        self,
+        name: str = None,
+    ):
+        joblib.dump(self.model, f'{config.path.save}/{name}.pkl')
+        return self
+
+    def load_model(
+        self,
+        name: str = None,
+    ) -> any:
+        return joblib.load(f'{config.path.load}/{name}.pkl')
+
+    def save_with_fit(
+        self,
+        X_train: pd.DataFrame = None,
+        y: pd.Series = None,
+        name: str = None
+    ):
+        self.fit(
+                X = X_train,
+                y = y
+            )
+        self.save_model(name = name)

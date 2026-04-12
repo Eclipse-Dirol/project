@@ -1,18 +1,20 @@
 import pandas as pd
 import numpy as np
 from config import config
-from models.linear_models import linerreg, SVR, lassocv, ridgecv, elasticnetcv
-from models.tree_models import decisiontree, random_forest, catboost, xgboost
-from preprocessing import work
+from work_with_data import work
 from CLI import CLI
 
-df = pd.read_csv(config.path.train)
-print(df)
-
-# cli = CLI()
-# result = cli.all_in_one()
+cli = CLI()
+df_train, df_submission, train, test, use_submit, fe, ensemble_list, model_dict = cli()
+# if ensemble_list is None:
+#         for type_model in model_dict:
+#             model = config.models.get(type_model, {}).get(model_dict.values())
+#             print(model)
 # print(len(result))  # Посмотри, сколько элементов там на самом деле
-# print(result)  
+# print(result)
+# type_models = list(config.models.keys())
+# model = config.models[type_models['lassocv']]['lassocv'].values()
+# print(model)
 # df, train, test, submit, fe, model_list = cli.all_in_one()
 # print(df)
 # print(train)
