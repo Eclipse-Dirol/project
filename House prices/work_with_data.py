@@ -1,15 +1,14 @@
 import pandas as pd
 import numpy as np
 from config import config
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from models.base import ModelPipeline as pipeline
 
 class work():
     def __init__(self):
         self.scaler  = StandardScaler()
-        self.encoder = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-100)
+        self.encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
         self.scaler.set_output(transform='pandas')
-        self.encoder.set_output(transform='pandas')
 
     def from_csv(self, train: bool = True) -> pd.DataFrame:
         if not isinstance(train, bool): raise ValueError('train not bool | work_with_data -> from_csv')
@@ -22,7 +21,7 @@ class work():
         df_temp = df.copy()
         nan_test = df_temp.select_dtypes(include=['float', 'int']).isna().sum().index.tolist()
         for i in nan_test:
-            df_temp[i] = df_temp[i].fillna(-100)
+            df_temp[i] = df_temp[i].fillna(df_temp[i].median())
         df_temp = df_temp.fillna('unknown')
         return df_temp
 
@@ -37,14 +36,20 @@ class work():
         if use_submit is False:
             num_cols = df_temp.select_dtypes(include=['float', 'int']).columns.tolist()
             cat_cols = df_temp.select_dtypes(include=['object', 'category', 'str']).columns.tolist()
+            ohe_df = self.encoder.fit_transform(df_temp[cat_cols])
+            ohe_df = pd.DataFrame(ohe_df, columns=self.encoder.get_feature_names_out(cat_cols), index=df_temp.index)
+            df_temp = df_temp.drop(columns=cat_cols)
             df_temp[num_cols] = self.scaler.fit_transform(df_temp[num_cols])
-            df_temp[cat_cols] = self.encoder.fit_transform(df_temp[cat_cols])
+            df_temp = pd.concat([df_temp, ohe_df], axis=1)
             return df_temp
         else:
             num_cols = df_temp.select_dtypes(include=['float', 'int']).columns.tolist()
             cat_cols = df_temp.select_dtypes(include=['object', 'category', 'str']).columns.tolist()
+            ohe_df = self.encoder.transform(df_temp[cat_cols])
+            ohe_df = pd.DataFrame(ohe_df, columns=self.encoder.get_feature_names_out(cat_cols), index=df_temp.index)
+            df_temp = df_temp.drop(columns=cat_cols)
             df_temp[num_cols] = self.scaler.transform(df_temp[num_cols])
-            df_temp[cat_cols] = self.encoder.transform(df_temp[cat_cols])
+            df_temp = pd.concat([df_temp, ohe_df], axis=1)
             return df_temp
 
     def forward(
@@ -60,7 +65,7 @@ class work():
         if use_submit:
             df_temp = df_temp.drop(columns=['Id'])
         else:
-            target = df_temp[config.args.target]
+            target = np.log1p(df_temp[config.args.target])
             df_temp = df_temp.drop(columns=[config.args.target, 'Id'])
         if FE:
             pass
