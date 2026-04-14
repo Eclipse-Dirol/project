@@ -53,7 +53,9 @@ config = {
                 'device': 'cuda',
                 'layers': 4,
                 'activationlayer': 'ReLU',
-                'nums_layers': 4
+                'nums_layers': 4,
+                'name_loss_func': 'MSELoss',
+                'name_opt_func': 'Adam'
                 
             },
             'target': 'SalePrice',
