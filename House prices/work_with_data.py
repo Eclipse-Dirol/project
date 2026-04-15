@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from config import config
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from models.base import ModelPipeline as pipeline
+import torch
 
 class work():
     def __init__(self):
@@ -28,8 +28,9 @@ class work():
     def transform_and_scaler(
         self,
         df: pd.DataFrame = None,
-        use_submit: bool = False
-    ) -> pd.DataFrame:
+        use_submit: bool = False,
+        nn: bool | None = None
+    ) -> pd.DataFrame | torch.Tensor:
         if not isinstance(df, pd.DataFrame): raise ValueError('df isn`t pd.DataFrame | work_with_data -> transform_and_scaler')
         if not isinstance(use_submit, bool): raise ValueError('use_submit is not bool, fuck | work_with_data -> transform_and_scaler')
         df_temp = df.copy()
@@ -41,6 +42,9 @@ class work():
             df_temp = df_temp.drop(columns=cat_cols)
             df_temp[num_cols] = self.scaler.fit_transform(df_temp[num_cols])
             df_temp = pd.concat([df_temp, ohe_df], axis=1)
+            if nn:
+                df_temp = df_temp.to_numpy()
+                return torch.tensor(data = df_temp, dtype=torch.float32)
             return df_temp
         else:
             num_cols = df_temp.select_dtypes(include=['float', 'int']).columns.tolist()
@@ -50,14 +54,18 @@ class work():
             df_temp = df_temp.drop(columns=cat_cols)
             df_temp[num_cols] = self.scaler.transform(df_temp[num_cols])
             df_temp = pd.concat([df_temp, ohe_df], axis=1)
+            if nn:
+                df_temp = df_temp.to_numpy()
+                return torch.tensor(data = df_temp, dtype=torch.float32)
             return df_temp
 
     def forward(
         self, 
         df: pd.DataFrame = None, 
         use_submit: bool = False, 
-        FE: bool | None = None
-    ) -> tuple[pd.DataFrame, pd.Series | None]:
+        FE: bool | None = None,
+        nn: bool | None = None
+    ) -> tuple[pd.DataFrame | torch.Tensor, pd.Series | torch.Tensor | None]:
         if not isinstance(df, pd.DataFrame): raise ValueError('df don`t pd.DataFrame | work_with_data -> forward')
         if not isinstance(use_submit, bool): raise ValueError('use_submit is not bool, fuck | work_with_data -> forwar')
         
@@ -70,7 +78,10 @@ class work():
         if FE:
             pass
         df_temp = self.lite_fillna(df = df_temp)
-        df_temp = self.transform_and_scaler(df = df_temp, use_submit = use_submit)
+        df_temp = self.transform_and_scaler(df = df_temp, use_submit = use_submit, nn = nn)
         if use_submit:
             return (df_temp, None)
+        if nn:
+            target = target.to_numpy()
+            return (df_temp, torch.tensor(target, dtype=torch.float32).view(-1, 1))
         return (df_temp, target)

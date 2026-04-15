@@ -36,37 +36,28 @@ def main():
         df_test = prep.from_csv(train = False)
         idx = df_test['Id']
         X_test, _ = prep.forward(df = df_test, use_submit = use_submit, FE = FE)
-    
-    if config.optuna.on:
+
+    if ensemble is False:
+
         print(f'=+=+=+=+=+=+= start train models =+=+=+=+=+=+=')
         models_name = config.selectedmodels
 
         for name in models_name:
-            model = get_model(name = name)()
+            if config.param_on:
+                model = get_model(name = name)(**config.param[name])
+            else:
+                model = get_model(name = name)()
             print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
-            pipe = pipeline(model = model)
-            pipe.search_hyperparam_with_optuna(
-                n_trials = config.optuna.n_truals,
-                name = name,
-                X_train = X_train,
-                y = y,
-            )
-    else:
-
-        if ensemble is False:
-
             if config.train:
-
-                print(f'=+=+=+=+=+=+= start train models =+=+=+=+=+=+=')
-                models_name = config.selectedmodels
-
-                for name in models_name:
-                    if config.param_on:
-                        model = get_model(name = name)(**config.param[name])
-                    else:
-                        model = get_model(name = name)()
-                    print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
-                    pipe = pipeline(model = model)
+                pipe = pipeline(model = model)
+                if config.optuna.on:
+                    pipe.search_hyperparam_with_optuna(
+                        n_trials = config.optuna.n_truals,
+                        name = name,
+                        X_train = X_train,
+                        y = y,
+                    )
+                else:
                     metrics, preds = pipe.full_test(
                         X_train = X_train,
                         y = y,
@@ -75,72 +66,55 @@ def main():
                         X_test = X_test
                     )
                     get_metrics(metrics= metrics)
-                    if use_submit or save_model:
-                        print('=+=+= save =+=+=')
-                    if use_submit:
-                        save_preds(preds = preds, idx = idx, name = name)
-                    if save_model:
-                        pipe.save_with_fit(
-                            X_train = X_train,
-                            y = y,
-                            name = name
-                        )
-
             else:
+                pipe = pipeline(model = model)
+                pipe.fit(X = X_train, y = y)
+                preds = pipe.predict( X = X_test)
+            if use_submit or save_model:
+                print('=+=+= save =+=+=')
+            if use_submit:
+                save_preds(preds = preds, idx = idx, name = name)
+            if save_model:
+                pipe.save_with_fit(
+                    X_train = X_train,
+                    y = y,
+                    name = name
+                )
+        return 0
 
-                print(f'=+=+=+=+=+=+= start train models =+=+=+=+=+=+=')
-                models_name = config.selectedmodels
-                for name in models_name:
-                    print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
-                    if config.param_on:
-                        model = get_model(name = name)(**config.param[name])
-                    else:
-                        model = get_model(name = name)()
-                    pipe = pipeline(model = model)
-                    pipe.fit(X = X_train, y = y)
-                    preds = pipe.predict( X = X_test)
-                    if use_submit or save_model:
-                        print('=+=+= save =+=+=')
-                    if use_submit:
-                        save_preds(preds = preds, idx = idx, name = name)
-                    if save_model:
-                        pipe.save_with_fit(
-                            X_train = X_train,
-                            y = y,
-                            name = name
+    else:
+
+        final_estimator = get_model(name = config.ensemble.finalmodel)()
+        list_func_model = []
+        for name in config.selectedmodels:
+            if config.param_on:
+                model = get_model(name = name)(**config.param[name])
+            else:
+                model = get_model(name = name)()
+            list_func_model.append((name, model))
+
+        if config.train:
+
+            print(f'=+=+=+=+=+=+= start train models =+=+=+=+=+=+=')
+            for name in config.selectedensemble:
+                ensemble = get_model(name = name)
+                print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
+                match name:
+                    case 'stacking':
+                        ensemble = ensemble(
+                            estimators = list_func_model,
+                            final_estimator = final_estimator,
+                            cv = config.ensemble.cv,
+                            n_jobs = config.args.njobs
+                        )
+                    case 'voiting':
+                        ensemble = ensemble(
+                            estimators = list_func_model,
+                            n_jobs = config.args.njobs
                         )
 
-        elif ensemble:
-
-            final_estimator = get_model(name = config.ensemble.finalmodel)()
-            list_func_model = []
-            for name in config.selectedmodels:
-                if config.param_on:
-                    model = get_model(name = name)(**config.param[name])
-                else:
-                    model = get_model(name = name)()
-                list_func_model.append((name, model))
-
-            if config.train:
-
-                print(f'=+=+=+=+=+=+= start train models =+=+=+=+=+=+=')
-                for name in config.selectedensemble:
-                    ensemble = get_model(name = name)
-                    print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
-                    match name:
-                        case 'stacking':
-                            ensemble = ensemble(
-                                estimators = list_func_model,
-                                final_estimator = final_estimator,
-                                cv = config.ensemble.cv,
-                                n_jobs = config.args.njobs
-                            )
-                        case 'voiting':
-                            ensemble = ensemble(
-                                estimators = list_func_model,
-                                n_jobs = config.args.njobs,
-                            )
-                    pipe = pipeline(model = ensemble)
+                pipe = pipeline(model = ensemble)
+                if config.train:
                     metrics, preds = pipe.full_test(
                         X_train= X_train,
                         y = y,
@@ -149,49 +123,20 @@ def main():
                         X_test = X_test
                     )
                     get_metrics(metrics= metrics)
-                    if use_submit or save_model:
-                        print('=+=+= save =+=+=')
-                    if use_submit:
-                        save_preds(preds = preds, idx = idx, name = name)
-                    if save_model:
-                        pipe.save_with_fit(
-                            X_train = X_train,
-                            y = y,
-                            name = name
-                        )
-
-            else:
-
-                print(f'=+=+=+=+=+=+= start train models =+=+=+=+=+=+=')
-                for name in config.selectedensemble:
-                    print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
-                    ensemble = get_model(name = name)
-                    match name:
-                        case 'stacking':
-                            ensemble = ensemble(
-                                estimators = list_func_model,
-                                final_estimator = final_estimator,
-                                cv = config.ensemble.cv,
-                                n_jobs = config.args.njobs
-                            )
-                        case 'voiting':
-                            ensemble = ensemble(
-                                estimators = list_func_model,
-                                n_jobs = config.args.njobs
-                            )
-                    pipe = pipeline(model = ensemble)
+                else:
                     pipe.fit(X = X_train, y = y)
                     preds = pipe.predict(X = X_test)
-                    if use_submit or save_model:
-                        print('=+=+= save =+=+=')
-                    if use_submit:
-                        save_preds(preds = preds, idx = idx, name = name)
-                    if save_model:
-                        pipe.save_with_fit(
-                            X_train = X_train,
-                            y = y,
-                            name = name
-                        )
+                if use_submit or save_model:
+                    print('=+=+= save =+=+=')
+                if use_submit:
+                    save_preds(preds = preds, idx = idx, name = name)
+                if save_model:
+                    pipe.save_with_fit(
+                        X_train = X_train,
+                        y = y,
+                        name = name
+                    )
+            return 0
 
 if __name__ == '__main__':
     main()

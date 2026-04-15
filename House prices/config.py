@@ -12,6 +12,8 @@ from sklearn.neighbors import KNeighborsRegressor
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 config = {
+    'selectedmodels': ['lassocv', 'catboost', 'xgboost', 'lightgbm', 'random_forest'],
+    'selectedensemble': ['stacking'],
     'train': True,
     'use_submit': True,
     'FE': False,
@@ -23,12 +25,19 @@ config = {
         'loss': 'RMSE'  # его нельзя изменить, нужно лезть в код
     },
     'ensemble': {
-                'on': True,
+                'on': False,
                 'finalmodel': 'linerreg',
                 'cv': 5,
             },
-    'selectedmodels': ['lassocv', 'catboost'],
-    'selectedensemble': ['stacking'],
+    'NN': {
+        'save_weight': True,
+        'device': 'cuda',
+        'activationlayer': 'ReLU',
+        'name_loss_func': 'MSELoss',
+        'name_opt_func': 'Adam',         
+        'dropout': 0.1,
+        'weight': f'{BASE_DIR}/data/models/mlp_weights.pth',
+    },
     'path': {
             'train': f'{BASE_DIR}/data/train.csv',
             'test': f'{BASE_DIR}/data/test.csv',
@@ -48,15 +57,6 @@ config = {
             'kfold': {
                 'folds': 5,
                 'repeat': 3,
-            },
-            'NN': {
-                'device': 'cuda',
-                'layers': 4,
-                'activationlayer': 'ReLU',
-                'nums_layers': 4,
-                'name_loss_func': 'MSELoss',
-                'name_opt_func': 'Adam'
-                
             },
             'target': 'SalePrice',
         },
@@ -144,5 +144,5 @@ class Models():
                             'SVR': LinearSVR, 'decisiontree': DecisionTreeRegressor,
                             'random_forest': RandomForestRegressor, 'catboost': CatBoostRegressor,
                             'xgboost': XGBRegressor, 'lightgbm': LGBMRegressor,
-                            'knn': KNeighborsRegressor, 'mlp': None, 'stacking': StackingRegressor, 'voiting': VotingRegressor}
+                            'knn': KNeighborsRegressor, 'stacking': StackingRegressor, 'voiting': VotingRegressor}
         return dict_with_models[name]
