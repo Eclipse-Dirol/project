@@ -3,11 +3,14 @@ import numpy as np
 from config import config, Models
 from work_with_data import work
 from models.base import ModelPipeline
+from models.nn import MLP
 import os
 
 prep = work()
 get_model = Models()
 pipeline = ModelPipeline
+if config.NN.on:
+    mlp = MLP
 
 def save_preds(preds: np.ndarray = None, idx: pd.Series = None, name: str = None):
     preds = pd.DataFrame({
@@ -31,10 +34,14 @@ def main():
     print(f'=+=+=+=+=+=+= start import and prep =+=+=+=+=+=+=')
     df = prep.from_csv()
     X_train, y = prep.forward(df = df, FE = FE)
+    if config.NN.on:
+        X_train_nn, y_nn, input_feat = prep.forward(df = df, FE = FE, nn = config.NN.on)
     X_test = None
     if use_submit:
         df_test = prep.from_csv(train = False)
         idx = df_test['Id']
+        if config.NN.on:
+            X_test_nn, _, input_feat = prep.forward(df = df_test, FE = FE, nn = config.NN.on, use_submit=use_submit)
         X_test, _ = prep.forward(df = df_test, use_submit = use_submit, FE = FE)
 
     if ensemble is False:
@@ -43,33 +50,61 @@ def main():
         models_name = config.selectedmodels
 
         for name in models_name:
-            if config.param_on:
+            if config.param_on and name != 'mlp':
                 model = get_model(name = name)(**config.param[name])
+            elif name == 'mlp':
+                pass
             else:
                 model = get_model(name = name)()
             print(f'=+=+=+=+=+=+= {name} =+=+=+=+=+=+=')
             if config.train:
-                pipe = pipeline(model = model)
-                if config.optuna.on:
-                    pipe.search_hyperparam_with_optuna(
-                        n_trials = config.optuna.n_truals,
-                        name = name,
-                        X_train = X_train,
-                        y = y,
+                if name == 'mlp':
+                    model = mlp(input_feat=input_feat)
+                    model.forward(
+                        train=config.train,
+                        use_submit=use_submit,
+                        X_train = X_train_nn,
+                        y = y_nn,
+                        X_test = X_test_nn,
+                        save_weight=config.NN.save_weight,
+                        param_on = config.param_on
                     )
+                    pass
                 else:
-                    metrics, preds = pipe.full_test(
-                        X_train = X_train,
-                        y = y,
-                        folds = config.args.kfold.folds,
-                        use_submit = use_submit,
-                        X_test = X_test
-                    )
-                    get_metrics(metrics= metrics)
+                    pipe = pipeline(model = model)
+                    if config.optuna.on:
+                        pipe.search_hyperparam_with_optuna(
+                            n_trials = config.optuna.n_trials,
+                            name = name,
+                            X_train = X_train,
+                            y = y,
+                        )
+                    else:
+                        metrics, preds = pipe.full_test(
+                            X_train = X_train,
+                            y = y,
+                            folds = config.args.kfold.folds,
+                            use_submit = use_submit,
+                            X_test = X_test
+                        )
+                        get_metrics(metrics= metrics)
             else:
-                pipe = pipeline(model = model)
-                pipe.fit(X = X_train, y = y)
-                preds = pipe.predict( X = X_test)
+                if name == 'mlp':
+                    model = mlp(input_feat=input_feat)
+                    model.forward(
+                        train=config.train,
+                        use_submit=use_submit,
+                        X_train = X_train_nn,
+                        y = y_nn,
+                        X_test = X_test_nn,
+                        save_weight=config.NN.save_weight,
+                        param_on = config.param_on
+                    )
+                    continue
+                else:
+                    pipe = pipeline(model = model)
+                    pipe.fit(X = X_train, y = y)
+                    preds = pipe.predict( X = X_test)
             if use_submit or save_model:
                 print('=+=+= save =+=+=')
             if use_submit:
@@ -87,8 +122,10 @@ def main():
         final_estimator = get_model(name = config.ensemble.finalmodel)()
         list_func_model = []
         for name in config.selectedmodels:
-            if config.param_on:
+            if config.param_on and name != 'mlp':
                 model = get_model(name = name)(**config.param[name])
+            elif name == 'mlp':
+                pass
             else:
                 model = get_model(name = name)()
             list_func_model.append((name, model))
@@ -136,7 +173,7 @@ def main():
                         y = y,
                         name = name
                     )
-            return 0
+        return 0
 
 if __name__ == '__main__':
     main()

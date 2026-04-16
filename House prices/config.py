@@ -12,16 +12,16 @@ from sklearn.neighbors import KNeighborsRegressor
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 config = {
-    'selectedmodels': ['lassocv', 'catboost', 'xgboost', 'lightgbm', 'random_forest'],
+    'selectedmodels': ['lassocv', 'mlp'],
     'selectedensemble': ['stacking'],
     'train': True,
     'use_submit': True,
     'FE': False,
     'savemodel': False,
-    'param_on': True,
+    'param_on': False,
     'optuna': {
         'on': False,
-        'n_truals': 10,
+        'n_trials': 10,
         'loss': 'RMSE'  # его нельзя изменить, нужно лезть в код
     },
     'ensemble': {
@@ -30,13 +30,16 @@ config = {
                 'cv': 5,
             },
     'NN': {
+        'on': True,
         'save_weight': True,
         'device': 'cuda',
         'activationlayer': 'ReLU',
         'name_loss_func': 'MSELoss',
-        'name_opt_func': 'Adam',         
+        'name_opt_func': 'Adam',     
+        'epoch': 1000,    
         'dropout': 0.1,
         'weight': f'{BASE_DIR}/data/models/mlp_weights.pth',
+        'verbose': False,
     },
     'path': {
             'train': f'{BASE_DIR}/data/train.csv',

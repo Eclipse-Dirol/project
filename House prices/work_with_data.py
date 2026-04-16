@@ -65,7 +65,7 @@ class work():
         use_submit: bool = False, 
         FE: bool | None = None,
         nn: bool | None = None
-    ) -> tuple[pd.DataFrame | torch.Tensor, pd.Series | torch.Tensor | None]:
+    ) -> tuple[pd.DataFrame, pd.Series | None] | tuple[torch.Tensor, torch.Tensor | None, int]:
         if not isinstance(df, pd.DataFrame): raise ValueError('df don`t pd.DataFrame | work_with_data -> forward')
         if not isinstance(use_submit, bool): raise ValueError('use_submit is not bool, fuck | work_with_data -> forwar')
         
@@ -80,8 +80,12 @@ class work():
         df_temp = self.lite_fillna(df = df_temp)
         df_temp = self.transform_and_scaler(df = df_temp, use_submit = use_submit, nn = nn)
         if use_submit:
+            if nn:
+                input_feat = df_temp.shape[1]
+                return (df_temp, None, input_feat)
             return (df_temp, None)
         if nn:
             target = target.to_numpy()
-            return (df_temp, torch.tensor(target, dtype=torch.float32).view(-1, 1))
+            input_feat = df_temp.shape[1]
+            return (df_temp, torch.tensor(target, dtype=torch.float32).view(-1, 1), input_feat)
         return (df_temp, target)

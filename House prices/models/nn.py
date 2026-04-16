@@ -8,17 +8,18 @@ from config import config
 class _model_nn(nn.Module):
     def __init__(
         self,
-        input_feat,
-        output_feat,
-        dropout: float = config.NN.dropout,
+        input_feat: int = None,
     ):
         if input_feat is None: raise ValueError('input_feat in mlp is None')
         super().__init__()
+        dropout: float = config.NN.dropout
         activation_class = getattr(nn, config.NN.activationlayer)
         self.activation = activation_class()
-        self.layer_input = nn.Linear(input_feat, output_feat)
-        self.batchnorm_input = nn.BatchNorm1d(output_feat)
-        self.layer_out = nn.Linear(output_feat, 1)
+        self.layer_input = nn.Linear(input_feat, 256)
+        self.batchnorm_input = nn.BatchNorm1d(256)
+        self.hide_layer = nn.Linear(256, 128)
+        self.batchnorm_hide = nn.BatchNorm1d(128)
+        self.layer_out = nn.Linear(128, 1)
         
         self.dropout = nn.Dropout(dropout)
 
@@ -27,27 +28,31 @@ class _model_nn(nn.Module):
         x = self.batchnorm_input(x)
         x = self.activation(x)
         x = self.dropout(x)
+        x = self.hide_layer(x)
+        x = self.batchnorm_hide(x)
+        x = self.activation(x)
+        x = self.dropout(x)
         x = self.layer_out(x)
 
         return x
 
-class mlp():
+class MLP():
     def __init__(
         self,
-        device: str | None = None,
-        input_feat: int | None = None,
-        output_feat: int | None = None,
+        input_feat: int = None,
     ):
+        device = config.NN.device
         if device is None:
-            self.model = _model_nn(input_feat=input_feat, output_feat=output_feat)
+            self.model = _model_nn(input_feat=input_feat)
         else:
-            self.model = _model_nn(input_feat=input_feat, output_feat=output_feat).to(device)
+            self.model = _model_nn(input_feat=input_feat).to(device)
 
     def predict(
         self,
         x: torch.Tensor = None,
         param_on: bool | None = None
     ):
+        x = x.to(config.NN.device)
         if param_on:
             self.model.load_state_dict(torch.load(config.NN.weight))
         self.model.eval()
@@ -64,6 +69,8 @@ class mlp():
         verbose: bool = None,
         save_weight: bool = None,
     ):
+        x = x.to(config.NN.device)
+        y = y.to(config.NN.device)
         self.model.train()
         loss_fn = getattr(nn, name_loss_func)()
         opt = getattr(torch.optim, name_opt_func)(self.model.parameters(), lr=0.01)
@@ -79,7 +86,30 @@ class mlp():
             loss_list.append(loss)
             if (len(loss_list)) > 2:
                 if (loss_list[-2] - loss_list[-1]).abs() < 0.0005:
-                    print(f'EARLY STOPPING HERE!!!')
+                    print(f'EARLY STOPPING HERE!!! with loss: {loss}')
                     break
         if save_weight:
             torch.save(self.model.state_dict(), config.NN.weight)
+
+    def forward(
+        self,
+        train: bool | None = None,
+        use_submit: bool | None = None,
+        X_train: torch.Tensor = None,
+        y: torch.Tensor = None,
+        X_test: torch.Tensor = None,
+        save_weight: bool = None,
+        param_on: bool = None
+    ):
+        if train:
+            self.train(
+                x = X_train,
+                y = y,
+                name_loss_func=config.NN.name_loss_func,
+                name_opt_func=config.NN.name_opt_func,
+                EPOCH=config.NN.epoch,
+                verbose=config.NN.verbose,
+                save_weight=save_weight
+            )
+        if use_submit:
+            self.predict(x = X_test, param_on=param_on)
