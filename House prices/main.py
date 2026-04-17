@@ -4,7 +4,6 @@ from config import config, Models
 from work_with_data import work
 from models.base import ModelPipeline
 from models.nn import MLP
-import os
 
 prep = work()
 get_model = Models()
@@ -66,8 +65,9 @@ def main():
                         X_train = X_train_nn,
                         y = y_nn,
                         X_test = X_test_nn,
-                        save_weight=config.NN.save_weight,
-                        param_on = config.param_on
+                        save_weight=config.savemodel,
+                        param_on = config.param_on,
+                        idx=idx
                     )
                     pass
                 else:
@@ -97,8 +97,9 @@ def main():
                         X_train = X_train_nn,
                         y = y_nn,
                         X_test = X_test_nn,
-                        save_weight=config.NN.save_weight,
-                        param_on = config.param_on
+                        save_weight=config.savemodel,
+                        param_on = config.param_on,
+                        idx=idx
                     )
                     continue
                 else:
@@ -107,9 +108,9 @@ def main():
                     preds = pipe.predict( X = X_test)
             if use_submit or save_model:
                 print('=+=+= save =+=+=')
-            if use_submit:
+            if use_submit and name != 'mlp':
                 save_preds(preds = preds, idx = idx, name = name)
-            if save_model:
+            if save_model and name != 'mlp':
                 pipe.save_with_fit(
                     X_train = X_train,
                     y = y,
@@ -165,9 +166,9 @@ def main():
                     preds = pipe.predict(X = X_test)
                 if use_submit or save_model:
                     print('=+=+= save =+=+=')
-                if use_submit:
+                if use_submit and name != 'mlp':
                     save_preds(preds = preds, idx = idx, name = name)
-                if save_model:
+                if save_model and name != 'mlp':
                     pipe.save_with_fit(
                         X_train = X_train,
                         y = y,

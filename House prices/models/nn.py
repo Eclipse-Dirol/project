@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
 import pandas as pd
+import numpy as np
 import torch
 from config import config
+from torch.utils.data import TensorDataset, DataLoader
 
 
 class _model_nn(nn.Module):
@@ -59,33 +61,49 @@ class MLP():
         with torch.no_grad():
             return self.model(x)
 
+    def create_train_loader(
+        self,
+        X: torch.Tensor = None,
+        y: torch.Tensor = None,
+        batch_size: int = None
+    ):
+        dataset = TensorDataset(X, y)
+        train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        return train_loader
+
     def train(
         self,
-        x: torch.Tensor =  None,
-        y: torch.Tensor = None,
         name_loss_func: str = None,
         name_opt_func: str = None,
         EPOCH: int = None,
         verbose: bool = None,
         save_weight: bool = None,
+        train_loader = None
     ):
-        x = x.to(config.NN.device)
-        y = y.to(config.NN.device)
         self.model.train()
         loss_fn = getattr(nn, name_loss_func)()
-        opt = getattr(torch.optim, name_opt_func)(self.model.parameters(), lr=0.01)
+        opt = getattr(torch.optim, name_opt_func, torch.optim.Adam)(self.model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(T_max=config.NN.epoch, optimizer=opt, eta_min=1e-5)
         loss_list = []
         for epoch in range(EPOCH):
-            opt.zero_grad()
-            preds = self.model(x)
-            loss = loss_fn(preds, y)
-            loss.backward()
-            opt.step()
-            if verbose: 
-                print(f'epoch {epoch+1}, loss: {loss}')
+            epoch_loss = 0
+            for batch in train_loader:
+                X_batch, y_batch = batch
+                X_batch = X_batch.to(config.NN.device)
+                y_batch = y_batch.to(config.NN.device)
+                opt.zero_grad()
+                preds = self.model(X_batch)
+                loss = loss_fn(preds, y_batch)
+                loss.backward()
+                opt.step()
+                epoch_loss += loss.item()
+            scheduler.step()
+            if verbose:
+                epoch_loss /= len(train_loader)
+                print(f'epoch {epoch+1}, loss: {epoch_loss}')
             loss_list.append(loss)
             if (len(loss_list)) > 2:
-                if (loss_list[-2] - loss_list[-1]).abs() < 0.0005:
+                if (loss_list[-2] - loss_list[-1]).abs() < 0.0007:
                     print(f'EARLY STOPPING HERE!!! with loss: {loss}')
                     break
         if save_weight:
@@ -99,17 +117,28 @@ class MLP():
         y: torch.Tensor = None,
         X_test: torch.Tensor = None,
         save_weight: bool = None,
-        param_on: bool = None
+        param_on: bool = None,
+        idx: pd.Series | None = None,
     ):
         if train:
-            self.train(
-                x = X_train,
+            train_loader = self.create_train_loader(
+                X = X_train,
                 y = y,
+                batch_size=config.NN.batch
+            )
+            self.train(
                 name_loss_func=config.NN.name_loss_func,
                 name_opt_func=config.NN.name_opt_func,
                 EPOCH=config.NN.epoch,
                 verbose=config.NN.verbose,
-                save_weight=save_weight
+                save_weight=save_weight,
+                train_loader=train_loader
             )
         if use_submit:
-            self.predict(x = X_test, param_on=param_on)
+            preds = self.predict(x = X_test, param_on=param_on).to('cpu').view(-1)
+            preds = pd.DataFrame({
+                            'Id': idx,
+                            config.args.target: np.exp(preds)
+                        })
+            preds.to_csv(f'{config.path.submission}/mlp.csv', index = False)
+            

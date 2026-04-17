@@ -12,12 +12,12 @@ from sklearn.neighbors import KNeighborsRegressor
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 config = {
-    'selectedmodels': ['lassocv', 'mlp'],
+    'selectedmodels': ['mlp'],
     'selectedensemble': ['stacking'],
     'train': True,
     'use_submit': True,
     'FE': False,
-    'savemodel': False,
+    'savemodel': True,
     'param_on': False,
     'optuna': {
         'on': False,
@@ -31,15 +31,15 @@ config = {
             },
     'NN': {
         'on': True,
-        'save_weight': True,
         'device': 'cuda',
         'activationlayer': 'ReLU',
         'name_loss_func': 'MSELoss',
-        'name_opt_func': 'Adam',     
-        'epoch': 1000,    
+        'name_opt_func': 'Adam',
+        'epoch': 1000,
         'dropout': 0.1,
         'weight': f'{BASE_DIR}/data/models/mlp_weights.pth',
-        'verbose': False,
+        'verbose': True,
+        'batch': 20
     },
     'path': {
             'train': f'{BASE_DIR}/data/train.csv',
