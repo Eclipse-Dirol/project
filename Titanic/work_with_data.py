@@ -28,28 +28,15 @@ class work():
 
     def fe(self, df: pd.DataFrame = None) -> pd.DataFrame:
         df_temp = df.copy()
-        df_temp['GarageYrBlt'] = df_temp['GarageYrBlt'].fillna(0)
-        df_temp['LotArea'] = np.log1p(df_temp['LotArea'])
-        df_temp['area_by_rooms'] = df_temp.groupby('BedroomAbvGr')['GrLivArea'].transform('median')
-        df_temp['LotFrontage'] = df_temp['LotFrontage'].fillna(0)
-        df_temp['Alley'] = df_temp['Alley'].fillna('no_alley')
-        df_temp['Utilities'] = df_temp['Utilities'].fillna('no_utilities')
-        df_temp['area_by_neighborhood'] = df_temp.groupby('Neighborhood')['GrLivArea'].transform('median')
-        df_temp['lotarea_by_neighborhood'] = df_temp.groupby('Neighborhood')['LotArea'].transform('median')
-        df_temp['area_by_bldgtype'] = df_temp.groupby(by=['BldgType'])['GrLivArea'].transform('median')
-        df_temp['MasVnrArea'] = df_temp['MasVnrArea'].fillna(df_temp['MasVnrArea'].median())
-        df_temp['BsmtFinSF1'] = df_temp['BsmtFinSF1'].fillna(df_temp['BsmtFinSF1'].median())
-        df_temp['BsmtFinSF2'] = df_temp['BsmtFinSF2'].fillna(df_temp['BsmtFinSF2'].median())
-        df_temp['BsmtUnfSF'] = df_temp['BsmtUnfSF'].fillna(df_temp['BsmtUnfSF'].median())
-        df_temp['TotalBsmtSF'] = df_temp['TotalBsmtSF'].fillna(df_temp['TotalBsmtSF'].median())
-        df_temp['BsmtFullBath'] = df_temp['BsmtFullBath'].fillna(df_temp['BsmtFullBath'].median())
-        df_temp['BsmtHalfBath'] = df_temp['BsmtHalfBath'].fillna(df_temp['BsmtHalfBath'].median())
-        df_temp['GarageCars'] = df_temp['GarageCars'].fillna(0)
-        df_temp['GarageArea'] = df_temp['GarageArea'].fillna(0)
-        df_temp['high_LivArea'] = (df_temp['GrLivArea'] > df_temp['GrLivArea'].quantile(0.9)).astype(int)
-        df_temp['old_house'] = (df_temp['YearRemodAdd'] == df_temp['YearBuilt']) & (df_temp['YearBuilt'] < df_temp['YearBuilt'].median()).astype(int)
-        df_temp['have_second_floor'] = (df_temp['2ndFlrSF'] > 0).astype(int)
-        df_temp['have_pool'] = df_temp['PoolQC'].isna().astype(int)
+        df_temp = df_temp.drop(columns=['Name', 'Ticket', 'Cabin'])
+        df_temp['Age'] = df_temp['Age'].fillna(0)
+        df_temp['Fare'] = np.log1p(df_temp['Fare'])
+        df_temp['Age_by_pclass'] = df_temp.groupby('Pclass')['Age'].transform('mean')
+        df_temp['Fare_by_pclass'] = df_temp.groupby('Pclass')['Fare'].transform('mean')
+        df_temp['Fare_by_embarked'] = df_temp.groupby('Embarked')['Fare'].transform('mean')
+        df_temp['Age_by_embarked'] = df_temp.groupby('Embarked')['Age'].transform('mean')
+        df_temp['pclass_fare'] = df_temp['Fare'] * df_temp['Pclass']
+        df_temp['num_people'] = df_temp['SibSp'] + df_temp['Parch'] + 1
         return df_temp
 
     def transform_and_scaler(
@@ -98,10 +85,10 @@ class work():
         
         df_temp = df.copy()
         if use_submit:
-            df_temp = df_temp.drop(columns=['Id'])
+            df_temp = df_temp.drop(columns=['PassengerId'])
         else:
-            target = np.log1p(df_temp[config.args.target])
-            df_temp = df_temp.drop(columns=[config.args.target, 'Id'])
+            target = df_temp[config.args.target]
+            df_temp = df_temp.drop(columns=[config.args.target, 'PassengerId'])
         if FE:
             df_temp = self.fe(df = df_temp)
         df_temp = self.lite_fillna(df = df_temp)

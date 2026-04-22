@@ -1,24 +1,24 @@
 from omegaconf import OmegaConf
 import os
-from sklearn.linear_model import LinearRegression, LassoCV, RidgeCV, ElasticNet
-from sklearn.svm import LinearSVR
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor, StackingRegressor, VotingRegressor
-from catboost import CatBoostRegressor
-from xgboost import XGBRegressor
-from lightgbm import LGBMRegressor
-from sklearn.neighbors import KNeighborsRegressor
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
+from sklearn.svm import LinearSVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, StackingClassifier, VotingClassifier
+from catboost import CatBoostClassifier
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 config = {
-    'selectedmodels': ['lassocv', 'linerreg', 'catboost'],
-    'selectedensemble': ['stacking'],
+    'selectedmodels': ['catboost', 'knn', 'mlp'],
+    'selectedensemble': ['stacking', 'voiting'],
     'train': True,
     'use_submit': True,
-    'FE': False,
+    'FE': True,
     'savemodel': False,
-    'param_on': True,
+    'param_on': False,
     'optuna': {
         'on': False,
         'n_trials': 10,
@@ -26,20 +26,20 @@ config = {
     },
     'ensemble': {
                 'on': False,
-                'finalmodel': 'linerreg',
+                'finalmodel': 'logreg',
                 'cv': 5,
             },
     'NN': {
         'on': True,
         'device': 'cuda',
         'activationlayer': 'ReLU',
-        'name_loss_func': 'MSELoss',
+        'name_loss_func': 'BCELoss',
         'name_opt_func': 'Adam',
         'epoch': 1000,
         'dropout': 0.1,
         'weight': f'{BASE_DIR}/data/models/mlp_weights.pth',
         'verbose': True,
-        'batch': 20
+        'batch': 10
     },
     'path': {
             'train': f'{BASE_DIR}/data/train.csv',
@@ -48,7 +48,7 @@ config = {
             'save': f'{BASE_DIR}/data/models'
         },
     'models': {
-            'Linermodel': ['linerreg', 'lassocv', 'ridgecv', 'elasticnet', 'SVR'],
+            'Linermodel': ['logreg', 'lasso', 'ridge', 'elasticnet', 'SVC'],
             'Treemodel': ['decisiontree', 'random_forest', 'catboost', 'xgboost', 'lightgbm'],
             'KNN': ['knn'],
             'NN':['mlp'],
@@ -61,14 +61,35 @@ config = {
                 'folds': 5,
                 'repeat': 3,
             },
-            'target': 'SalePrice',
+            'target': 'Survived',
         },
     'param': {
-        'linerreg': {},
-        'lassocv': {'max_iter': 10000},
-        'ridgecv': {},
-        'elasticnet': {},
-        'SVR': {},
+        'logreg': {
+            'l1_ratio': 0.5,
+            'solver': 'saga',
+            'max_iter': 1000,
+        },
+        'lasso': {
+            'solver': 'liblinear',
+            'l1_ratio': 1,
+            'max_iter': 1000,
+        },
+        'ridge': {
+            'cv': 5,
+            'alphas': 2,
+            'class_weight': None,
+        },
+        'elasticnet': {
+            'solver': 'saga', 
+            'l1_ratio': 0.6,
+            'max_iter': 1000,
+        },
+        'SVC': {
+            'penalty': 'l2',
+            'tol': 1e-3,
+            'C': 1,
+            'max_iter': 1000
+        },
         'decisiontree':{},
         'random_forest': {},
         'catboost': {'verbose': False},
@@ -143,9 +164,9 @@ class Models():
         return self.__get_func(name = name)
 
     def __get_func(self, name: str = None):
-        dict_with_models = {'linerreg': LinearRegression, 'lassocv': LassoCV, 'ridgecv': RidgeCV, 'elasticnet': ElasticNet,
-                            'SVR': LinearSVR, 'decisiontree': DecisionTreeRegressor,
-                            'random_forest': RandomForestRegressor, 'catboost': CatBoostRegressor,
-                            'xgboost': XGBRegressor, 'lightgbm': LGBMRegressor,
-                            'knn': KNeighborsRegressor, 'stacking': StackingRegressor, 'voiting': VotingRegressor}
+        dict_with_models = {'logreg': LogisticRegression, 'lasso': LogisticRegression, 'ridge': RidgeClassifier, 'elasticnet': LogisticRegression,
+                            'SVR': LinearSVC, 'decisiontree': DecisionTreeClassifier,
+                            'random_forest': RandomForestClassifier, 'catboost': CatBoostClassifier,
+                            'xgboost': XGBClassifier, 'lightgbm': LGBMClassifier,
+                            'knn': KNeighborsClassifier, 'stacking': StackingClassifier, 'voiting': VotingClassifier}
         return dict_with_models[name]
