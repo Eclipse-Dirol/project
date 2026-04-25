@@ -12,11 +12,11 @@ from sklearn.neighbors import KNeighborsRegressor
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 config = {
-    'selectedmodels': ['lassocv', 'linerreg', 'catboost'],
+    'selectedmodels': ['catboost', 'xgboost', 'lightgbm'],
     'selectedensemble': ['stacking'],
     'train': True,
     'use_submit': True,
-    'FE': False,
+    'FE': True,
     'savemodel': False,
     'param_on': True,
     'optuna': {
@@ -25,12 +25,12 @@ config = {
         'loss': 'RMSE'  # его нельзя изменить, нужно лезть в код
     },
     'ensemble': {
-                'on': False,
+                'on': True,
                 'finalmodel': 'linerreg',
                 'cv': 5,
             },
     'NN': {
-        'on': True,
+        'on': False,
         'device': 'cuda',
         'activationlayer': 'ReLU',
         'name_loss_func': 'MSELoss',
@@ -71,9 +71,47 @@ config = {
         'SVR': {},
         'decisiontree':{},
         'random_forest': {},
-        'catboost': {'verbose': False},
-        'xgboost': {'verbosity': 0},
-        'lightgbm': {'verbose': -1},
+        'catboost': {
+            'iterations': 4000,
+            'loss_function': 'RMSE',
+            'bootstrap_type': 'MVS',
+            'min_data_in_leaf': 10,
+            'subsample': 0.8,
+            'learning_rate': 0.004682365945633432,
+            'depth': 8,
+            'l2_leaf_reg': 1.8350145845846084,
+            'random_strength': 7.4399645273858335,
+            'verbose': False,
+        },
+        'xgboost': {
+            'learning_rate': 0.03644265345990077,
+            'max_depth': 3,
+            'num_leaves': 34,
+            'min_child_weight': 21,
+            'reg_alpha': 0.5274555514454423,
+            'reg_lambda': 0.06720022361481678,
+            'gamma': 0.016632967950723738,
+            'n_estimators': 4000,
+            'subsample': 0.8,
+            'colsample_bytree': 0.8,
+            'tree_method': 'hist',
+            'verbosity': 0,
+            'eval_metric': 'rmse',
+            'n_jobs': -1
+ },
+        'lightgbm': {
+            'learning_rate': 0.029162572866580794,
+            'max_depth': 8,
+            'num_leaves': 3,
+            'min_child_samples': 2,
+            'reg_alpha': 0.3137153336331008,
+            'reg_lambda': 0.005369638446125523,
+            'verbosity': 0,
+            'n_estimators': 4000,
+            'subsample': 0.8,
+            'colsample_bytree': 0.8,
+            'n_jobs': -1
+        },
         'knn': {},
     },
     'optuna_param': {

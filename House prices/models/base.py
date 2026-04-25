@@ -12,9 +12,9 @@ import joblib
 class validation():
     @staticmethod
     def none_folds(
-    X_train: pd.DataFrame = None,
+    X_train: np.ndarray = None,
     y: pd.Series = None,
-    X_test: pd.DataFrame | None = None,
+    X_test: np.ndarray | None = None,
     train_size: float | None = config.args.randomstate,
     model: any = None,
     random_state: int | None = config.args.randomstate,
@@ -23,9 +23,9 @@ class validation():
     param: dict | None = None,
     ) -> tuple[dict, np.ndarray | None]:
 
-        if not isinstance(X_train, pd.DataFrame):
+        if not isinstance(X_train, np.ndarray):
             raise TypeError('X not a DataFrame')
-        if not isinstance(y, (pd.Series, pd.DataFrame)):
+        if not isinstance(y, pd.Series):
             raise TypeError('y not s DataFrame or Series')
         assert 0 < train_size < 1, 'train_size must be between 0 and 1'
         if not is_regressor(model): raise ValueError('model not defined')
@@ -46,9 +46,9 @@ class validation():
 
     @staticmethod
     def k_folds(
-        X_train: pd.DataFrame = None,
+        X_train: np.ndarray = None,
         y: pd.Series = None,
-        X_test: pd.DataFrame | None = None,
+        X_test: np.ndarray | None = None,
         folds: int | None = config.args.kfold.folds,
         repeat: int | None = config.args.kfold.repeat,
         model: any = None,
@@ -58,7 +58,7 @@ class validation():
         param: dict | None = None,
         ) -> tuple[dict, np.ndarray | None] | float:
 
-        if not isinstance(X_train, pd.DataFrame):
+        if not isinstance(X_train, np.ndarray):
             raise TypeError('X not a DataFrame')
         if not isinstance(y, pd.Series):
             raise TypeError('y not a Series')
@@ -73,7 +73,7 @@ class validation():
         else:
             test_preds = None
         for (tr_idx, val_idx) in kf.split(X_train):
-            X_tr, X_val = X_train.iloc[tr_idx], X_train.iloc[val_idx]
+            X_tr, X_val = X_train[tr_idx], X_train[val_idx]
             y_tr, y_val = y.iloc[tr_idx], y.iloc[val_idx]
 
             model.fit(X_tr, y_tr)
@@ -100,7 +100,7 @@ class validation():
     @staticmethod
     def k_folds_for_optuna(
         trial: int = None,
-        X_train: pd.DataFrame = None,
+        X_train: np.ndarray = None,
         y: pd.Series = None,
         name: str = None,
         model: any = None,
@@ -139,23 +139,23 @@ class ModelPipeline(BaseEstimator, RegressorMixin):
 
     def fit(
         self,
-        X: pd.DataFrame  = None,
+        X: np.ndarray  = None,
         y: pd.Series = None,
     ):
         return self.model.fit(X, y)
 
     def predict(
         self,
-        X: pd.DataFrame = None,
+        X: np.ndarray = None,
     ):
         return self.model.predict(X)
 
     def full_test(
         self,
-        X_train: pd.DataFrame = None,
+        X_train: np.ndarray = None,
         y: pd.Series = None,
         use_submit: bool | None = None,
-        X_test: pd.DataFrame | None = None,
+        X_test: np.ndarray | None = None,
         param_on: bool | None = None,
         param: dict | None = None,
         folds: int | None = config.args.kfold.folds,
@@ -206,7 +206,7 @@ class ModelPipeline(BaseEstimator, RegressorMixin):
 
     def save_with_fit(
         self,
-        X_train: pd.DataFrame = None,
+        X_train: np.ndarray = None,
         y: pd.Series = None,
         name: str = None
     ):
@@ -220,7 +220,7 @@ class ModelPipeline(BaseEstimator, RegressorMixin):
         self,
         n_trials: int = None,
         name: str = None,
-        X_train: pd.DataFrame = None,
+        X_train: np.ndarray = None,
         y: pd.Series = None,
     ):
         study = optuna.create_study(direction='minimize')

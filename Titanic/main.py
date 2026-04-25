@@ -33,6 +33,7 @@ def main():
     print(f'=+=+=+=+=+=+= start import and prep =+=+=+=+=+=+=')
     df = prep.from_csv()
     X_train, y = prep.forward(df = df, FE = FE)
+    X_train = np.array(X_train)
     if config.NN.on:
         X_train_nn, y_nn, input_feat = prep.forward(df = df, FE = FE, nn = config.NN.on)
     X_test = None
@@ -44,6 +45,7 @@ def main():
         if config.NN.on:
             X_test_nn, _, input_feat = prep.forward(df = df_test, FE = FE, nn = config.NN.on, use_submit=use_submit)
         X_test, _ = prep.forward(df = df_test, use_submit = use_submit, FE = FE)
+        X_test = np.array(X_test)
 
     if ensemble is False:
 
