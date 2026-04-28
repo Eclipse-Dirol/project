@@ -4,7 +4,7 @@ from config import config
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 import torch
 
-class work():
+class Work():
     def __init__(self):
         self.scaler  = StandardScaler()
         self.encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
@@ -73,7 +73,7 @@ class work():
                 return torch.tensor(data = df_temp, dtype=torch.float32)
             return df_temp
 
-    def forward(
+    def run(
         self, 
         df: pd.DataFrame = None, 
         use_submit: bool = False, 

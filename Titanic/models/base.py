@@ -9,8 +9,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 import optuna
 import joblib
 
-class validation():
-    @staticmethod
+class Validation():
     def none_folds(
     X_train: np.ndarray = None,
     y: pd.Series = None,
@@ -22,7 +21,9 @@ class validation():
     param_on: bool = False,
     param: dict | None = None,
     ) -> tuple[dict, np.ndarray | None]:
-
+        '''
+        default train-test split
+        '''
         if not isinstance(X_train, np.ndarray):
             raise TypeError('X not a DataFrame')
         if not isinstance(y, pd.Series):
@@ -46,7 +47,6 @@ class validation():
         pr = average_precision_score(y_train, preds_auc)
         return ({'acc': acc, 'f1': f1, 'roc': roc, 'pr': pr}, test_preds)
 
-    @staticmethod
     def k_folds(
         X_train: np.ndarray = None,
         y: pd.Series = None,
@@ -59,6 +59,9 @@ class validation():
         param_on: bool = False,
         param: dict | None = None,
         ) -> tuple[dict, np.ndarray | None] | float:
+        '''
+        K-fold validation
+        '''
 
         if not isinstance(X_train, np.ndarray):
             raise TypeError('X not a DataFrame')
@@ -98,7 +101,6 @@ class validation():
         pr, std_pr = np.mean(pr_list), np.std(pr_list)
         return ({'acc': (acc, std_acc), 'f1': (f1, std_f1), 'roc': (roc, std_roc), 'pr': (pr, std_pr)}, test_preds)
 
-    @staticmethod
     def k_folds_for_optuna(
         trial: int = None,
         X_train: np.ndarray = None,
@@ -106,6 +108,10 @@ class validation():
         name: str = None,
         model: any = None,
         ):
+        '''
+        k-fold for optuna
+        '''
+        
         param = config.optuna_param[name]
         name_param = param.keys()
         for name in name_param:
@@ -136,7 +142,7 @@ class ModelPipeline(BaseEstimator, ClassifierMixin):
         model: any = None,
     ):
         self.model = model
-        self.val = validation()
+        self.val = Validation()
 
     def fit(
         self,
@@ -167,7 +173,6 @@ class ModelPipeline(BaseEstimator, ClassifierMixin):
                 X_train = X_train,
                 y= y,
                 model = self.model,
-                
             )
         if folds is None:
             metrics, preds = self.val.none_folds(

@@ -1,11 +1,11 @@
 import pandas as pd
 import numpy as np
 from config import config, Models
-from work_with_data import work
+from work_with_data import Work
 from models.base import ModelPipeline
 from models.nn import MLP
 
-prep = work()
+prep = Work()
 get_model = Models()
 pipeline = ModelPipeline
 if config.NN.on:
@@ -32,10 +32,10 @@ def main():
     ensemble = config.ensemble.on
     print(f'=+=+=+=+=+=+= start import and prep =+=+=+=+=+=+=')
     df = prep.from_csv()
-    X_train, y = prep.forward(df = df, FE = FE)
+    X_train, y = prep.run(df = df, FE = FE)
     X_train = np.array(X_train)
     if config.NN.on:
-        X_train_nn, y_nn, input_feat = prep.forward(df = df, FE = FE, nn = config.NN.on)
+        X_train_nn, y_nn, input_feat = prep.run(df = df, FE = FE, nn = config.NN.on)
     X_test = None
     X_test_nn = None
     idx = None
@@ -43,8 +43,8 @@ def main():
         df_test = prep.from_csv(train = False)
         idx = df_test['PassengerId']
         if config.NN.on:
-            X_test_nn, _, input_feat = prep.forward(df = df_test, FE = FE, nn = config.NN.on, use_submit=use_submit)
-        X_test, _ = prep.forward(df = df_test, use_submit = use_submit, FE = FE)
+            X_test_nn, _, input_feat = prep.run(df = df_test, FE = FE, nn = config.NN.on, use_submit=use_submit)
+        X_test, _ = prep.run(df = df_test, use_submit = use_submit, FE = FE)
         X_test = np.array(X_test)
 
     if ensemble is False:
@@ -63,7 +63,7 @@ def main():
             if config.train:
                 if name == 'mlp':
                     model = mlp(input_feat=input_feat)
-                    model.forward(
+                    model.run(
                         train=config.train,
                         use_submit=use_submit,
                         X_train = X_train_nn,
@@ -95,7 +95,7 @@ def main():
             else:
                 if name == 'mlp':
                     model = mlp(input_feat=input_feat)
-                    model.forward(
+                    model.run(
                         train=config.train,
                         use_submit=use_submit,
                         X_train = X_train_nn,

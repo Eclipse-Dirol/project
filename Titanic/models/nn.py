@@ -7,7 +7,7 @@ from config import config
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.metrics import accuracy_score
 
-class _model_nn(nn.Module):
+class BaseNN(nn.Module):
     def __init__(
         self,
         input_feat: int = None,
@@ -46,9 +46,9 @@ class MLP():
     ):
         device = config.NN.device
         if device is None:
-            self.model = _model_nn(input_feat=input_feat)
+            self.model = BaseNN(input_feat=input_feat)
         else:
-            self.model = _model_nn(input_feat=input_feat).to(device)
+            self.model = BaseNN(input_feat=input_feat).to(device)
 
     def predict(
         self,
@@ -116,7 +116,7 @@ class MLP():
         if save_weight:
             torch.save(self.model.state_dict(), config.NN.weight)
 
-    def forward(
+    def run(
         self,
         train: bool | None = None,
         use_submit: bool | None = None,

@@ -12,7 +12,7 @@ from sklearn.neighbors import KNeighborsRegressor
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 config = {
-    'selectedmodels': ['catboost', 'xgboost', 'lightgbm'],
+    'selectedmodels': ['lightgbm', 'lassocv'],
     'selectedensemble': ['stacking'],
     'train': True,
     'use_submit': True,
