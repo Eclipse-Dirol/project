@@ -13,4 +13,4 @@
  - `ensemble.on` - включает ансамбли,
  - `NN.on` - включает поддержку mlp.
  - !!! Если у вас не nvidia установите параметр device = None в NN <br>
- - pipeline в `House Price` устарел, смотреть в `default pipeline` или новые соревнования
+ - !!!pipeline в `House Price` устарел, смотреть в `default pipeline` или новые соревнования
